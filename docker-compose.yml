@@ -1,0 +1,81 @@
+version: "3"
+
+services:
+    db:
+        build: ./db
+        volumes:
+            - jobs_data:/var/lib/postgresql/data
+            - ./db/initdb.d:/docker-entrypoint-initdb.d
+        ports:
+            - 5432:5432
+        environment: 
+            - POSTGRES_DB=jobs
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+        healthcheck:
+            test: if [ -f status/starting ]; then echo $$(date +%T) > status/starting && exit 1; else exit 0; fi
+            interval: 10s
+            retries: 60
+            start_period: 15s
+        restart:
+            unless-stopped
+    storage:
+        build: ./storage
+        command: bash -c "alembic upgrade head && uvicorn main:app --host=0.0.0.0 --port=8000"
+        ports: 
+            - 8000:8000
+        depends_on:
+            db:
+                condition: service_healthy
+        restart:
+            unless-stopped
+        environment: 
+            - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db/jobs
+    nlp_api:
+        build: ./nlp
+        ports: 
+            - 8004:8000
+        command: uvicorn main:app --host 0.0.0.0
+        volumes:
+            - nltk_data:/root/nltk_data
+        environment:
+            - BROKER_URL=redis://redis:6379
+            - RESULT_BACKEND_URL=redis://redis:6379
+        depends_on:
+            - redis
+    worker:
+        build: ./nlp
+        command: celery -A worker worker --loglevel=info
+        volumes:
+            - nltk_data:/root/nltk_data
+        environment:
+            - BROKER_URL=redis://redis:6379
+            - RESULT_BACKEND_URL=redis://redis:6379
+        depends_on: 
+            - redis
+            - nlp_api
+    redis:
+        image: redis:6-alpine
+        ports:
+            - 6379:6379
+    graphs:
+        build: ./graphs
+    dashboard:
+        build: ./dashboard
+        ports:
+            - 8050:8000
+        command: python index.py
+        environment:
+            - REDIS_URL=redis://redis:6379
+            - DATA_URL=http://storage:8000/jobs
+            - GRAPHS_URL=http://graphs:8000
+        depends_on:
+            - storage
+            - redis
+            - graphs
+        restart:
+            unless-stopped
+volumes:
+    jobs_data:
+    nltk_data:
+    

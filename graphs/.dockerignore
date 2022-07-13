@@ -1,0 +1,6 @@
+.dockerignore
+Dockerfile
+.Rhistory
+
+.Rproj.user/
+grpaphs.Rproj
