@@ -53,7 +53,7 @@ def flatten_aux(doc: Dict[str, Any]) -> Generator[Tuple[str, Any], None, None]:
             yield (key, doc[key])
                 
 
-def flatten(doc: dict[str, Any]) -> Dict[str, Any]:
+def flatten(doc: Dict[str, Any]) -> Dict[str, Any]:
     '''
     Flatten the given dictionary combining keys
     '''
