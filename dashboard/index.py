@@ -9,7 +9,7 @@ import numpy as np
 import os
 import json
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 import datetime
 
 from app import app, cache
@@ -166,7 +166,7 @@ def redirect(initial: bool, pathname: str) -> str:
               Output('main-content', 'children'),
               Output("sidebar-accordion", "active_item"),
               Input('url', 'pathname'))
-def display_page(pathname: str) -> tuple[Optional[dash.development.base_component.Component],
+def display_page(pathname: str) -> Tuple[Optional[dash.development.base_component.Component],
                                          Optional[dash.development.base_component.Component]]:
     """
     Display the appropriate page for the location.
